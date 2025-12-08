@@ -1,12 +1,14 @@
 const { Pool } = require('pg');
+require('dotenv').config();
 
 const pool = new Pool({
-    user: 'postgres',
-    password: '123', 
-    host: 'localhost',
-    port: 5435,             
-    database: 'barangq_db'
+    user: process.env.DB_USER,
+    host: process.env.DB_HOST,
+    database: process.env.DB_NAME,
+    password: process.env.DB_PASSWORD,
+    port: process.env.DB_PORT
 });
+console.log("ENV PASSWORD:", process.env.DB_PASSWORD);
 
 // Kode Tes Koneksi (Supaya muncul status di terminal)
 pool.connect((err, client, release) => {
@@ -18,7 +20,7 @@ pool.connect((err, client, release) => {
         if (err) {
             return console.error('❌ Error query:', err.stack);
         }
-        console.log('✅ Database TERHUBUNG SUKSES di Port 5435!');
+        console.log('✅ Database TERHUBUNG SUKSES di Port 5432!');
     });
 });
 
