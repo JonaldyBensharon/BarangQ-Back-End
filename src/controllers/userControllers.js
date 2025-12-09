@@ -62,7 +62,18 @@ async function loginUser(req, res) {
     }
 }
 
+async function handleGetUserInfo(req, res){
+    try {
+        const username = req.user?.username; 
+        const data = await userService.findUserByUsername(username);
+        res.json(data ?? {});
+    } catch (err) {
+        res.status(500).json(err.message);
+    }
+};
+
 module.exports = {
     registerUser,
-    loginUser
+    loginUser,
+    handleGetUserInfo
 };
