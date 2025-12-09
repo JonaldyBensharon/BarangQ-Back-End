@@ -10,7 +10,7 @@ const pool = new Pool({
 });
 console.log("ENV PASSWORD:", process.env.DB_PASSWORD);
 
-// Kode Tes Koneksi (Supaya muncul status di terminal)
+// Informasi Koneksi di terminal
 pool.connect((err, client, release) => {
     if (err) {
         return console.error('❌ Gagal Konek Database:', err.message);

@@ -1,6 +1,5 @@
 const express = require('express');
 const cors = require('cors');
-const pool = require('./db');
 const app = express();
 const PORT = 5001;
 
@@ -13,33 +12,11 @@ app.use((req, res, next) => {
     next();
 });
 
-// --- 1. USER & SETTINGS ---
-app.post('/login', async (req, res) => {
-    const { username, password } = req.body;
-    try {
-        const user = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
-        if (user.rows.length === 0) return res.status(401).json("Username tidak ditemukan");
-        if (password !== user.rows[0].password) return res.status(401).json("Kata sandi salah");
-        res.json(user.rows[0]);
-    } catch (err) { res.status(500).json(err.message); } // <-- DIGANTI JADI JSON
-});
+// Impor routes
+const userRoutes = require('./src/routes/userRoutes');
 
-app.post('/register', async (req, res) => {
-    const { username, password, store_name } = req.body;
-    try {
-        const check = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
-        if (check.rows.length > 0) return res.status(400).json("Username sudah dipakai, ganti yang lain!");
-        
-        const newUser = await pool.query(
-            "INSERT INTO users (username, password, store_name) VALUES ($1, $2, $3) RETURNING *",
-            [username, password, store_name || 'Toko Saya']
-        );
-        res.json(newUser.rows[0]);
-    } catch (err) { 
-        console.error(err);
-        res.status(500).json("Gagal mendaftar: " + err.message); // <-- DIGANTI JADI JSON
-    }
-});
+// Registrasi routes
+app.use('/api/auth', userRoutes);
 
 app.put('/settings', async (req, res) => {
     const { id, username, password, store_name, store_description, address, store_image } = req.body;
