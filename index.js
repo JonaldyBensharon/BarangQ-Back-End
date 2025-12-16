@@ -7,7 +7,7 @@ app.use(express.json());
 
 // LOGGING
 app.use((req, res, next) => {
-    console.log(`➡️  [${req.method}] ${req.url}`);
+    console.log(`[${req.method}] ${req.url}`);
     next();
 });
 
@@ -29,7 +29,12 @@ app.use('/api/transactions', transactionRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reports', reportsRoutes);
 
+// Route testing awal
+app.get("/", (req, res) => {
+  res.send("Backend berjalan dengan baik");
+});
+
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
-    console.log(`✅ Server BARANGQ PRO berjalan di http://localhost:${PORT}`);
+    console.log(`Server BARANGQ PRO berjalan di http://localhost:${PORT}`);
 });
