@@ -24,6 +24,7 @@
     GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO barangq_user;
 
 4. Registrasi server baru di pgAdmin, lalu sesuaikan connection dengan contoh seperti berikut.
+    
     HOST= localhost
     
     PORT=5432
