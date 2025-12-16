@@ -8,7 +8,6 @@ const pool = new Pool({
     password: process.env.DB_PASSWORD,
     port: process.env.DB_PORT
 });
-console.log("ENV PASSWORD:", process.env.DB_PASSWORD);
 
 // Informasi Koneksi di terminal
 pool.connect((err, client, release) => {

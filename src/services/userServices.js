@@ -1,13 +1,14 @@
 const pool = require('../config/db');
+const bcrypt = require('bcrypt');
 
 // Buat user baru
-async function createUser(username, password, store_name) {
+async function createUser(username, passwordHash, store_name, pinHash) {
     const query = `
-        INSERT INTO users(username, password, store_name)
-        VALUES($1, $2, $3)
+        INSERT INTO users(username, password_hash, store_name, pin)
+        VALUES($1, $2, $3, $4)
         RETURNING *;
     `;
-    const values = [username, password, store_name || 'Toko saya'];
+    const values = [username, passwordHash, store_name || 'Toko saya', pinHash];
     const { rows } = await pool.query(query, values);
     return rows[0];
 }
@@ -24,7 +25,33 @@ async function findUserByUsername(username) {
     return rows[0];
 }
 
+// Update password user
+async function updateUserPassword(username, newPasswordHash) {
+    const query = `
+        UPDATE users
+        SET password_hash = $1,
+            updated_at = NOW()
+        WHERE username = $2
+        RETURNING *;
+    `;
+    const { rows } = await pool.query(query, [newPasswordHash, username]);
+    return rows[0];
+}
+
+// Verifikasi PIN user
+async function verifyUserPin(username, pin) {
+    const user = await findUserByUsername(username);
+    if (!user) return null;
+
+    const match = await bcrypt.compare(pin, user.pin);
+    if (!match) return null;
+
+    return user;
+}
+
 module.exports = {
     createUser,
-    findUserByUsername
+    findUserByUsername,
+    updateUserPassword,
+    verifyUserPin
 };
