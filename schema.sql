@@ -42,14 +42,29 @@ CREATE TABLE IF NOT EXISTS products (
     UNIQUE (user_id, code)
 );
 
--- 3. Tabel Transactions
 CREATE TABLE IF NOT EXISTS transactions (
-    id SERIAL PRIMARY KEY,
+	id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-    type VARCHAR(10) NOT NULL CHECK (type IN ('IN', 'OUT')),
-    qty INTEGER NOT NULL CHECK (qty > 0),
-    total_price DECIMAL(15, 2) NOT NULL CHECK (total_price >= 0),
-    profit DECIMAL(15, 2) DEFAULT 0 CHECK (profit >= 0),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS detail_transactions (
+	id SERIAL PRIMARY KEY,
+	transaction_id INTEGER NOT NULL REFERENCES transactions(id) ON DELETE CASCADE,
+    product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+	qty INTEGER NOT NULL CHECK (qty > 0)
+);
+
+CREATE OR REPLACE VIEW vw_detail_transactions AS
+SELECT 
+    dt.id,
+    dt.transaction_id,
+    dt.product_id,
+    p.name AS product_name,
+    dt.qty,
+    p.buy_price,
+    p.sell_price,
+    (dt.qty * p.sell_price) AS subtotal,
+    (dt.qty * (p.sell_price - p.buy_price)) AS profit
+FROM detail_transactions dt
+JOIN products p ON dt.product_id = p.id;
