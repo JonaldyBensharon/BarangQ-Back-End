@@ -1,21 +1,31 @@
 const jwt = require('jsonwebtoken');
 
-const authenticateToken = (req, res, next) => {
-    // 1. Ambil token dari Header (Format: "Bearer TOKEN_DISINI")
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+function authenticate(req, res, next) {
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader) {
+        return res.status(401).json("Akses ditolak: Token tidak tersedia");
+    }
 
-    // 2. Jika tidak ada token, tolak akses
-    if (!token) return res.status(401).json({ error: "Akses ditolak. Silakan login." });
+    const parts = authHeader.split(' ');
+    if (parts.length !== 2 || parts[0] !== 'Bearer') {
+        return res.status(401).json("Format token tidak valid");
+    }
 
-    // 3. Cek keaslian token
-    jwt.verify(token, process.env.JWT_SECRET || 'rahasia_negara', (err, user) => {
-        if (err) return res.status(403).json({ error: "Token tidak valid." });
-        
-        // 4. Jika valid, simpan data user ke request
-        req.user = user; 
-        next(); // Lanjut ke Controller
-    });
-};
+    const token = parts[1];
 
-module.exports = authenticateToken;
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        req.user = {
+            id: decoded.id,
+            username: decoded.username
+        };
+
+        next();
+    } catch (err) {
+        return res.status(401).json("Token tidak valid atau sudah kedaluwarsa");
+    }
+}
+
+module.exports = authenticate;

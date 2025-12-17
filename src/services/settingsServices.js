@@ -1,59 +1,46 @@
 const pool = require('../config/db');
 
-// 1. AMBIL DATA SETTINGS
 async function getStoreInfoById(userId) {
-    const query = `
-        SELECT username, store_name, store_description, address, store_image 
-        FROM users 
-        WHERE id = $1
-    `;
+    const query = 'SELECT username, store_name, store_description, address, store_image FROM users WHERE id = $1';
     const { rows } = await pool.query(query, [userId]);
     return rows[0];
 }
 
-// 2. UPDATE DATA SETTINGS (VERSI DEBUG & KUAT)
 async function updateStoreInfo(userId, data) {
     const currentData = await getStoreInfoById(userId);
+    
     let finalImage = currentData.store_image; 
-
-    // 👇 DEBUG: Lihat apa yang diterima backend di Terminal
-    console.log("--- DEBUG UPDATE IMAGE ---");
-    console.log("Image Baru:", data.store_image);
-    console.log("Minta Hapus?:", data.delete_image, "(Tipe:", typeof data.delete_image, ")");
-
-    // LOGIKA PRIORITAS:
     
-    // 1. Jika ada upload file baru (Ada kata 'uploads')
     if (data.store_image && data.store_image.includes('/uploads/')) {
-         console.log("Keputusan: PAKAI GAMBAR BARU");
-         finalImage = data.store_image;
+         finalImage = data.store_image; 
+    } else if (String(data.delete_image) === 'true') {
+        finalImage = null; r
     }
-    
-    // 2. Jika user minta hapus (Kita convert ke String agar aman)
-    //    Ini menangani 'true' (string) maupun true (boolean)
-    else if (String(data.delete_image) === 'true') {
-        console.log("Keputusan: HAPUS GAMBAR (JADI NULL)");
-        finalImage = null; 
+
+    let finalUsername = data.username;
+    if (!finalUsername || finalUsername.trim() === '') {
+        finalUsername = currentData.username;
     }
-    
-    else {
-        console.log("Keputusan: PERTAHANKAN GAMBAR LAMA");
-    }
+
+    console.log("--- DEBUG UPDATE ---");
+    console.log("Username Final:", finalUsername);
+    console.log("Gambar Final:", finalImage);
 
     const query = `
         UPDATE users 
-        SET username = $1,
+        SET 
+            username = $1,
             store_name = $2, 
             store_description = $3, 
             address = $4, 
             store_image = $5,
             updated_at = NOW()
         WHERE id = $6
-        RETURNING username, store_name, store_description, address, store_image
+        RETURNING *
     `;
     
     const values = [
-        data.username,
+        finalUsername, 
         data.store_name, 
         data.store_description, 
         data.address, 
@@ -61,8 +48,13 @@ async function updateStoreInfo(userId, data) {
         userId
     ];
     
-    const { rows } = await pool.query(query, values);
-    return rows[0];
+    try {
+        const { rows } = await pool.query(query, values);
+        return rows[0];
+    } catch (err) {
+        console.error("SQL Error:", err.message);
+        throw err;
+    }
 }
 
 module.exports = {

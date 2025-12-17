@@ -1,17 +1,18 @@
 const express = require('express');
 const router = express.Router();
 const productController = require('../controllers/productControllers');
+const auth = require('../middleware/authMiddleware')
 
 // Ambil data produk
-router.get('/', productController.handleGetProducts);
+router.get('/', auth, productController.handleGetProducts);
 
 // Buat data produk
-router.post('/', productController.handleCreateProduct);
+router.post('/', auth, productController.handleCreateProduct);
 
 // Update data produk
-router.put('/:id', productController.handleUpdateProduct);
+router.put('/:id', auth, productController.handleUpdateProduct);
 
 // Delete data produk
-router.delete('/:id', productController.handleDeleteProduct);
+router.delete('/:id', auth, productController.handleDeleteProduct);
 
 module.exports = router;
