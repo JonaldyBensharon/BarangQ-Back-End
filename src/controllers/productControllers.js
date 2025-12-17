@@ -2,7 +2,8 @@ const productService = require('../services/productServices');
 
 async function handleGetProducts(req, res) {
     try {
-        const products = await productService.getAllProducts();
+        const userId = req.user.id;
+        const products = await productService.getAllProducts(userId);
         res.json(products);
     } catch (err) {
         console.error(err);
@@ -12,14 +13,15 @@ async function handleGetProducts(req, res) {
 
 async function handleCreateProduct(req, res) {
     try {
+        const userId = req.user.id;
         const data = req.body;
 
-        const isExist = await productService.checkProductExists(data.name, data.brand);
+        const isExist = await productService.checkProductExists(userId, data.name, data.brand);
         if (isExist) {
             return res.status(400).json("Gagal: Barang ini sudah ada!");
         }
 
-        const result = await productService.createProduct(data);
+        const result = await productService.createProduct(userId, data);
         res.json(result);
 
     } catch (err) {
@@ -30,10 +32,11 @@ async function handleCreateProduct(req, res) {
 
 async function handleUpdateProduct(req, res) {
     try {
-        const id = req.params.id;
+        const userId = req.user.id;
+        const productId = req.params.id;
         const data = req.body;
 
-        const result = await productService.updateProduct(id, data);
+        const result = await productService.updateProduct(userId, productId, data);
         res.json(result);
 
     } catch (err) {
@@ -44,8 +47,9 @@ async function handleUpdateProduct(req, res) {
 
 async function handleDeleteProduct(req, res) {
     try {
-        const id = req.params.id;
-        const result = await productService.deleteProduct(id);
+        const userId = req.user.id;
+        const productId = req.params.id;
+        const result = await productService.deleteProduct(userId, productId);
         res.json(result);
     } catch (err) {
         console.error(err);
