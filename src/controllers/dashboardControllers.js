@@ -2,10 +2,13 @@ const dashboardService = require('../services/dashboardServices');
 
 async function getDashboard(req, res) {
     try {
-        const income = await dashboardService.getIncome();
-        const products = await dashboardService.getProductCount();
-        const sales = await dashboardService.getSalesCount();
-        const lowStock = await dashboardService.getLowStock();
+        const userId = req.user.id;
+        const [income, products, sales, lowStock] = await Promise.all([
+            dashboardService.getIncome(userId),
+            dashboardService.getProductCount(userId),
+            dashboardService.getSalesCount(userId),
+            dashboardService.getLowStock(userId)
+        ]);
 
         res.json({
             income,
@@ -14,7 +17,8 @@ async function getDashboard(req, res) {
             lowStock
         });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error(err);
+        res.status(500).json( "Gagal mengambil data dashboard: " + err.message );
     }
 }
 

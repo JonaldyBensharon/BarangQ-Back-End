@@ -1,29 +1,40 @@
 const pool = require('../config/db');
 
-async function getIncome() {
+async function getIncome(userId) {
     const result = await pool.query(
-        "SELECT SUM(total_price) FROM transactions WHERE type='OUT'"
+        `SELECT COALESCE(SUM(total_price), 0) AS income
+        FROM transactions 
+        WHERE user_id = $1 AND type='OUT'`, [userId]
     );
-    return result.rows[0].sum || 0;
+    return Number(result.rows[0].income);
 }
 
-async function getProductCount() {
+async function getProductCount(userId) {
     const result = await pool.query(
-        "SELECT COUNT(*) FROM products"
+        `SELECT COUNT(*) AS count
+         FROM products
+         WHERE user_id = $1`,
+         [userId]
     );
-    return result.rows[0].count || 0;
+    return Number(result.rows[0].count);
 }
 
-async function getSalesCount() {
+async function getSalesCount(userId) {
     const result = await pool.query(
-        "SELECT COUNT(*) FROM transactions WHERE type='OUT'"
+        `SELECT COUNT(*) AS count
+        FROM transactions 
+        WHERE user_id = $1 AND type='OUT'`, [userId]
     );
-    return result.rows[0].count || 0;
+    return Number(result.rows[0].count);
 }
 
-async function getLowStock() {
+async function getLowStock(userId) {
     const result = await pool.query(
-        "SELECT * FROM products WHERE stock < 5 LIMIT 5"
+        `SELECT id, name, stock 
+        FROM products 
+        WHERE user_id = $1 AND stock < 5 
+        ORDER BY stock ASC
+        LIMIT 5`, [userId]
     );
     return result.rows;
 }

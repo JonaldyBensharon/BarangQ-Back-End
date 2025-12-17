@@ -1,47 +1,60 @@
-// src/services/stockService.js
 const pool = require('../config/db');
 
 // Cari produk berdasarkan nama atau kode
-async function findProduct(search_term) {
-    const result = await pool.query(
-        "SELECT * FROM products WHERE lower(name) = lower($1) OR code = $1",
-        [search_term]
+async function findProduct(client , userId, search_term) {
+    const result = await client.query(
+        `SELECT * FROM products 
+        WHERE user_id = $1
+        AND (lower(name) = lower($2) OR code = $2)
+        LIMIT 1`,
+        [userId, search_term]
     );
     return result.rows[0] || null;
 }
 
 // Update stok
-async function incrementStock(productId, qty) {
-    await pool.query(
-        "UPDATE products SET stock = stock + $1 WHERE id = $2",
-        [qty, productId]
+async function incrementStock(client, userId, productId, qty) {
+    await client.query(
+        `UPDATE products SET stock = stock + $1 
+        WHERE id = $2 AND user_id=$3`,
+        [qty, productId, userId]
     );
 }
 
 // Catat transaksi
-async function logStockTransaction(productId, qty) {
-    await pool.query(
-        "INSERT INTO transactions (product_id, type, qty, total_price, profit) VALUES ($1, 'IN', $2, 0, 0)",
-        [productId, qty]
+async function logStockTransaction(client, userId, productId, qty) {
+    await client.query(
+        `INSERT INTO transactions (user_id, product_id, type, qty, total_price, profit) 
+        VALUES ($1, $2, 'IN', $3, 0, 0)`,
+        [userId, productId, qty]
     );
 }
 
-async function addStock({ search_term, qty }) {
-    const product = await findProduct(search_term);
-    if (!product) return null;
+async function addStock({ userId, search_term, qty }) {
+    const client = await pool.connect();
+    try{
+        await client.query('BEGIN');
+        const product = await findProduct(client, userId, search_term);
+        if (!product) {
+            throw new Error('Produk tidak ditemukan.');
+        }
 
-    await incrementStock(product.id, qty);
-    await logStockTransaction(product.id, qty);
+        await incrementStock(client, userId, product.id, qty);
+        await logStockTransaction(client, userId, product.id, qty);
+        await client.query('COMMIT');
 
-    return {
-        message: "Stok ditambah",
-        new_stock: product.stock + parseInt(qty)
-    };
+        return {
+            message: "Stok ditambah",
+            new_stock: product.stock + qty
+        };
+    } catch(err){
+        await client.query('ROLLBACK');
+        throw err;
+    } finally{
+        client.release();
+    }
 }
 
 module.exports = {
-    findProduct,
-    incrementStock,
-    logStockTransaction,
-    addStock,
+    addStock
 };

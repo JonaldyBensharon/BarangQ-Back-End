@@ -12,14 +12,14 @@ const pool = new Pool({
 // Informasi Koneksi di terminal
 pool.connect((err, client, release) => {
     if (err) {
-        return console.error('❌ Gagal Konek Database:', err.message);
+        return console.error('Gagal Koneksi ke Database:', err.message);
     }
     client.query('SELECT NOW()', (err, result) => {
         release();
         if (err) {
-            return console.error('❌ Error query:', err.stack);
+            return console.error('Error query:', err.stack);
         }
-        console.log('✅ Database TERHUBUNG SUKSES di Port 5432!');
+        console.log('Database TERHUBUNG SUKSES di Port 5432!');
     });
 });
 
