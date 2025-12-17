@@ -7,7 +7,7 @@ async function handleGetProducts(req, res) {
         res.json(products);
     } catch (err) {
         console.error(err);
-        res.status(500).json(err.message);
+        res.status(500).json("Terjadi kesalahan saat mengambil data produk");
     }
 }
 
@@ -16,17 +16,15 @@ async function handleCreateProduct(req, res) {
         const userId = req.user.id;
         const data = req.body;
 
-        const isExist = await productService.checkProductExists(userId, data.name, data.brand);
-        if (isExist) {
-            return res.status(400).json("Gagal: Barang ini sudah ada!");
-        }
-
         const result = await productService.createProduct(userId, data);
         res.json(result);
 
     } catch (err) {
         console.error(err);
-        res.status(500).json(err.message);
+        if(err.message.includes('Kode produk sudah digunakan')){
+            return res.status(400).json(err.message);
+        }
+        res.status(500).json("Terjadi kesalahan saat menambahkan barang.");
     }
 }
 
@@ -41,7 +39,10 @@ async function handleUpdateProduct(req, res) {
 
     } catch (err) {
         console.error(err);
-        res.status(500).json(err.message);
+         if(err.message.includes('Kode produk sudah digunakan')){
+            return res.status(400).json(err.message);
+        }
+        res.status(500).json("Terjadi kesalahan saat memperbarui barang.");
     }
 }
 
