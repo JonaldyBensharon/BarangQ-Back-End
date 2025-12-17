@@ -8,23 +8,23 @@ async function getStoreInfoById(userId) {
 
 async function updateStoreInfo(userId, data) {
     const currentData = await getStoreInfoById(userId);
+    if (!currentData) {
+        throw new Error("User tidak ditemukan di database");
+    }
     
     let finalImage = currentData.store_image; 
     
     if (data.store_image && data.store_image.includes('/uploads/')) {
-         finalImage = data.store_image; 
-    } else if (String(data.delete_image) === 'true') {
-        finalImage = null; r
+         finalImage = data.store_image;
+    } 
+    else if (String(data.delete_image) === 'true') {
+        finalImage = null; 
     }
 
     let finalUsername = data.username;
     if (!finalUsername || finalUsername.trim() === '') {
         finalUsername = currentData.username;
     }
-
-    console.log("--- DEBUG UPDATE ---");
-    console.log("Username Final:", finalUsername);
-    console.log("Gambar Final:", finalImage);
 
     const query = `
         UPDATE users 
@@ -40,7 +40,7 @@ async function updateStoreInfo(userId, data) {
     `;
     
     const values = [
-        finalUsername, 
+        finalUsername,
         data.store_name, 
         data.store_description, 
         data.address, 
