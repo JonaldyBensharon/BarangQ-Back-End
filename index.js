@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const app = express();
 
 app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PUT', 'DELETE'] }));
@@ -28,6 +29,7 @@ app.use('/api/stocks', stockRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reports', reportsRoutes);
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Route testing awal
 app.get("/", (req, res) => {

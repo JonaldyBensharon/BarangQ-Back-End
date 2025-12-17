@@ -1,35 +1,57 @@
 const settingsService = require('../services/settingsServices');
-const bcrypt = require('bcrypt');
 
-async function updateSettings(req, res) {
+// GET
+exports.getStoreInfo = async (req, res) => {
+    try {
+        const userId = req.user.id; 
+        const storeData = await settingsService.getStoreInfoById(userId);
+
+        if (!storeData) {
+            return res.status(404).json({ message: "User tidak ditemukan" });
+        }
+        
+        res.json(storeData);
+    } catch (err) {
+        console.error("Error di getStoreInfo:", err);
+        res.status(500).json({ error: "Gagal mengambil data toko" });
+    }
+};
+
+// PUT (UPDATE)
+exports.updateStoreInfo = async (req, res) => {
     try {
         const userId = req.user.id;
-        const { username, password, store_name, store_description, address, store_image } = req.body;
-
-        if(!username || typeof username !== 'string'){
-            return res.status(400).json("Username tidak valid");
+        
+        // Pastikan 'delete_image' diambil dari req.body
+        let { username, store_name, store_description, address, delete_image } = req.body;
+        
+        // ... (Logika imageUrl sama seperti sebelumnya) ...
+        let imageUrl = null;
+        if (req.file) {
+            const baseUrl = `${req.protocol}://${req.get('host')}`;
+            imageUrl = `${baseUrl}/uploads/${req.file.filename}`;
+        } else {
+            imageUrl = req.body.store_image; 
         }
 
-        const cleanUsername = username.trim();
+        const dataToUpdate = {
+            username,
+            store_name,
+            store_description,
+            address,
+            store_image: imageUrl,
+            delete_image: delete_image // <-- Ini harus terkirim
+        };
+        
+        const updatedData = await settingsService.updateStoreInfo(userId, dataToUpdate);
 
-        let hashedPassword;
-        if(password){
-            if(typeof password !== 'string' || password.length < 5){
-                return res.status(400).json("Kata sandi minimal terdiri atas 5 karakter.");
-            }
-            hashedPassword = await bcrypt.hash(password, 10);
-        }
-        const result = await settingsService.updateUserSettings(userId, {username: cleanUsername, password: hashedPassword, store_name, store_description, address, store_image});
-        res.json(result);
+        res.json({ 
+            message: "Pengaturan toko berhasil disimpan", 
+            user: updatedData 
+        });
+
     } catch (err) {
-        console.error(err);
-        if(err.code === '23505'){
-            return res.status(400).json("Username sudah digunakan.");
-        }
-        res.status(500).json("Gagal memperbarui pengaturan akun");
+        console.error("Error di updateStoreInfo:", err);
+        res.status(500).json({ error: "Gagal menyimpan perubahan" });
     }
-}
-
-module.exports = {
-    updateSettings
 };
