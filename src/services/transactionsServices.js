@@ -3,10 +3,10 @@ const pool = require('../config/db');
 // Ambil stok produk
 async function getStock(client,userId, productId) {
     const result = await client.query(
-        `SELECT stock FROM products WHERE id = $1 AND user_id = $2`,
+        `SELECT stock, buy_price, sell_price FROM products WHERE id = $1 AND user_id = $2`,
         [productId, userId]
     );
-    return result.rows[0]?.stock ?? null;
+    return result.rows[0] ?? null;
 }
 
 // Kurangi stok produk
@@ -17,35 +17,52 @@ async function decreaseStock(client, userId, productId, qty) {
     );
 }
 
-// Catat transaksi keluar
-async function logTransaction(client, userId, productId, qty, total_price, profit) {
-    await client.query(
-        `INSERT INTO transactions (user_id, product_id, type, qty, total_price, profit)
-         VALUES ($1, $2, 'OUT', $3, $4, $5)`,
-        [userId, productId, qty, total_price, profit]
-    );
-}
+async function processSale({ userId, items }) {
+    if (!items || !Array.isArray(items) || items.length === 0) {
+        throw new Error('Tidak ada barang untuk dijual.');
+    }
 
-async function processSale({ userId, product_id, qty, total_price, profit }) {
     const client = await pool.connect();
 
     try {
         await client.query('BEGIN');
-        const stock = await getStock(client, userId, product_id);
-        if(stock == null){
-            throw new Error('Produk tidak ditemukan.');
-        }
+        
+        const transactionRes = await client.query(
+            `INSERT INTO transactions (user_id) VALUES ($1) RETURNING id`,
+            [userId]
+        );
 
-        if (stock < qty) {
-            throw new Error('Stok tidak mencukupi.');
-        }
+        const transactionId = transactionRes.rows[0].id;
 
-        await logTransaction(client, userId, product_id, qty, total_price, profit);
-        await decreaseStock(client, userId, product_id, qty);
+        for (const item of items) {
+            const { product_id, qty } = item;
 
+            const product = await getStock(client, userId, product_id);
+            if (!product) {
+                throw new Error(`Produk dengan ID ${product_id} tidak ditemukan.`);
+            }
+
+            if (product.stock < qty) {
+                throw new Error(`Stok produk "${product_id}" tidak mencukupi.`);
+            }
+
+            if(qty <= 0) {
+                throw new Error(`Jumlah barang harus lebih dari 0`);
+            }
+
+            await client.query(
+                `INSERT INTO detail_transactions
+                (transaction_id, product_id, qty)
+                VALUES ($1, $2, $3)`,
+                [transactionId, product_id, qty]
+            );
+
+            await decreaseStock(client, userId, product_id, qty);
+        } 
         await client.query('COMMIT');
-        return { message: "Transaksi Berhasil" };
 
+        return {
+            transaction_id: transactionId};
     } catch (err) {
         await client.query('ROLLBACK');
         throw err;
@@ -54,6 +71,60 @@ async function processSale({ userId, product_id, qty, total_price, profit }) {
     }
 }
 
+async function getTransactionDetail(transactionId) {
+    const client = await pool.connect();
+    try {
+        const result = await client.query(
+            `SELECT *
+             FROM vw_detail_transactions
+             WHERE transaction_id = $1`,
+            [transactionId]
+        );
+
+        if (!result.rows.length) {
+            return { items: [], totalQty: 0, totalRevenue: 0, totalProfit: 0 };
+        }
+
+        const items = result.rows.map(row => ({
+            id: row.id,
+            product_id: row.product_id,
+            product_name: row.product_name,
+            qty: row.qty,
+            buy_price: parseFloat(row.buy_price),
+            sell_price: parseFloat(row.sell_price),
+            subtotal: parseFloat(row.subtotal),
+            profit: parseFloat(row.profit)
+        }));
+
+        const totalQty = items.reduce((acc, cur) => acc + cur.qty, 0);
+        const totalRevenue = items.reduce((acc, cur) => acc + cur.subtotal, 0);
+        const totalProfit = items.reduce((acc, cur) => acc + cur.profit, 0);
+
+        return { items, totalQty, totalRevenue, totalProfit };
+    } finally {
+        client.release();
+    }
+}
+
+async function getUserTransactions(userId, limit = 10) {
+    const client = await pool.connect();
+    try {
+        const result = await client.query(
+            `SELECT id, created_at
+             FROM transactions
+             WHERE user_id = $1
+             ORDER BY created_at DESC
+             LIMIT $2`,
+            [userId, limit]
+        );
+        return result.rows;
+    } finally {
+        client.release();
+    }
+}
+
 module.exports = {
-    processSale
+    processSale,
+    getTransactionDetail,
+    getUserTransactions
 };

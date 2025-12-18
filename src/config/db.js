@@ -11,7 +11,7 @@ console.log(`Port: ${process.env.DB_PORT}`);
 
 const pool = new Pool({
     user: process.env.DB_USER,
-    host: process.env.DB_HOST, // Pastikan di .env isinya 127.0.0.1
+    host: process.env.DB_HOST, 
     database: process.env.DB_NAME,
     password: process.env.DB_PASSWORD,
     port: process.env.DB_PORT,
@@ -19,7 +19,6 @@ const pool = new Pool({
 
 pool.connect((err, client, release) => {
     if (err) {
-        // Cek detail error lebih dalam
         console.error('----------------------------------------');
         console.error('GAGAL KONEKSI KE DATABASE');
         console.error('Pesan Error:', err.message);
