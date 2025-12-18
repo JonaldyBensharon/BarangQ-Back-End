@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const transactionController = require('../controllers/transactionsControllers');
-const auth = require('../middlewares/authMiddleware');
+const auth = require('../middleware/authMiddleware');
 
 // Endpoint untuk mencatat transaksi 
 router.post('/', auth, transactionController.handleTransaction);
