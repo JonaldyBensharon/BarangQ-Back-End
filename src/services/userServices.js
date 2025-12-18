@@ -1,17 +1,14 @@
 const pool = require('../config/db');
 const bcrypt = require('bcrypt');
+const fs = require('fs');      
+const path = require('path');   
 
-// 1. BUAT USER BARU (Diselaraskan dengan Controller baru)
+
 async function createUser(userData) {
-    // Kita terima dalam bentuk Object agar rapi
     const { username, password, store_name } = userData;
-    
-    // Hash password di sini (Service yang urus logic berat)
     const passwordHash = await bcrypt.hash(password, 10);
-    
-    // Generate PIN 4 digit otomatis
-    const pinPlain = Math.floor(1000 + Math.random() * 9000).toString();
-    const pinHash = await bcrypt.hash(pinPlain, 10); // Hash PIN untuk keamanan
+    const pinPlain = Math.floor(1000 + Math.random() * 9000).toString(); 
+    const pinHash = await bcrypt.hash(pinPlain, 10);
 
     const query = `
         INSERT INTO users(username, password_hash, store_name, pin_hash)
@@ -22,44 +19,29 @@ async function createUser(userData) {
     const values = [username, passwordHash, store_name || 'Toko Saya', pinHash];
     const { rows } = await pool.query(query, values);
     
-    // Kembalikan data user + PIN ASLI (supaya bisa muncul di Popup Frontend sekali saja)
     return { ...rows[0], pin: pinPlain };
 }
 
-// 2. CARI USER
 async function findUserByUsername(username) {
-    const query = `
-        SELECT *
-        FROM users
-        WHERE username = $1
-        LIMIT 1;
-    `;
+    const query = 'SELECT * FROM users WHERE username = $1 LIMIT 1';
     const { rows } = await pool.query(query, [username]);
     return rows[0];
 }
 
-// 3. UPDATE PASSWORD
 async function updateUserPassword(username, newPasswordHash) {
     const query = `
-        UPDATE users
-        SET password_hash = $1,
-            updated_at = NOW()
-        WHERE username = $2
-        RETURNING *;
+        UPDATE users SET password_hash = $1, updated_at = NOW()
+        WHERE username = $2 RETURNING *;
     `;
     const { rows } = await pool.query(query, [newPasswordHash, username]);
     return rows[0];
 }
 
-// 4. VERIFIKASI PIN
 async function verifyUserPin(username, pinInput) {
     const user = await findUserByUsername(username);
     if (!user) return null;
 
-    // Pastikan kolom di database Anda 'pin_hash' (sesuai fungsi create di atas)
-    // Jika kolom di DB namanya 'pin', ganti user.pin_hash jadi user.pin
     const dbPin = user.pin_hash || user.pin; 
-
     if (!dbPin) return null;
 
     const match = await bcrypt.compare(pinInput, dbPin);
@@ -68,8 +50,25 @@ async function verifyUserPin(username, pinInput) {
     return user;
 }
 
-// 5. HAPUS USER (INI YANG HILANG TADI!)
 async function deleteUserById(userId) {
+    const findQuery = 'SELECT store_image FROM users WHERE id = $1';
+    const { rows: findRows } = await pool.query(findQuery, [userId]);
+    const user = findRows[0];
+
+    if (user && user.store_image) {
+        try {
+            const filename = user.store_image.split('/').pop(); 
+            const filePath = path.join(__dirname, '../../uploads', filename); 
+
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath); 
+                console.log(`[Service] File fisik berhasil dihapus: ${filename}`);
+            }
+        } catch (err) {
+            console.error("[Service] Gagal menghapus file fisik (lanjut hapus DB):", err);
+        }
+    }
+
     const query = 'DELETE FROM users WHERE id = $1 RETURNING id';
     const { rows } = await pool.query(query, [userId]);
     return rows[0];
@@ -80,5 +79,5 @@ module.exports = {
     findUserByUsername,
     updateUserPassword,
     verifyUserPin,
-    deleteUserById // <--- Pastikan ini ikut diexport!
+    deleteUserById
 };

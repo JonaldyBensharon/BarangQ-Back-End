@@ -1,9 +1,5 @@
-DROP TABLE IF EXISTS transactions CASCADE;
-DROP TABLE IF EXISTS products CASCADE;
-DROP TABLE IF EXISTS users CASCADE;
-
--- 1. Tabel Users
-CREATE TABLE users (
+-- Tabel Users
+CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     username VARCHAR(100) UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
@@ -16,31 +12,47 @@ CREATE TABLE users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 2. Tabel Products 
-CREATE TABLE products (
+CREATE OR REPLACE FUNCTION update_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+   NEW.updated_at = CURRENT_TIMESTAMP;
+   RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_users_timestamp
+BEFORE UPDATE ON users
+FOR EACH ROW
+EXECUTE FUNCTION update_timestamp();
+
+-- Tabel Products 
+CREATE TABLE IF NOT EXISTS products (
     id SERIAL PRIMARY KEY,
-    code VARCHAR(50) UNIQUE, 
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    code VARCHAR(50), 
     name VARCHAR(255) NOT NULL,
     brand VARCHAR(100),     
     description TEXT,
     image_url TEXT,         
-    buy_price DECIMAL(15, 2) NOT NULL,
-    sell_price DECIMAL(15, 2) NOT NULL,
-    stock INTEGER DEFAULT 0,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    buy_price DECIMAL(15, 2) NOT NULL CHECK (buy_price >= 0),
+    sell_price DECIMAL(15, 2) NOT NULL CHECK (sell_price >= 0),
+    stock INTEGER NOT NULL DEFAULT 0 CHECK (stock >= 0),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    UNIQUE (user_id, code)
 );
 
 -- 3. Tabel Transactions
-CREATE TABLE transactions (
+CREATE TABLE IF NOT EXISTS transactions (
     id SERIAL PRIMARY KEY,
-    type VARCHAR(10) CHECK (type IN ('IN', 'OUT')),
-    product_id INTEGER REFERENCES products(id) ON DELETE CASCADE,
-    qty INTEGER NOT NULL,
-    total_price DECIMAL(15, 2) NOT NULL,
-    profit DECIMAL(15, 2) DEFAULT 0,
-    date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    type VARCHAR(10) NOT NULL CHECK (type IN ('IN', 'OUT')),
+    qty INTEGER NOT NULL CHECK (qty > 0),
+    total_price DECIMAL(15, 2) NOT NULL CHECK (total_price >= 0),
+    profit DECIMAL(15, 2) DEFAULT 0 CHECK (profit >= 0),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 );
-
 -- 4. DATA DUMMY 
 INSERT INTO users (username, password, store_name, store_description, address, store_image) 
 VALUES ('admin', '123', 'BarangQ Store Pusat', 'Toko elektronik dan aksesoris terlengkap di kota Medan.', 'Jl. Setia Budi No. 123, Medan', 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&auto=format&fit=crop');

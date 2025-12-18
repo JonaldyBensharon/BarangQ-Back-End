@@ -3,39 +3,62 @@ const transactionService = require('../services/transactionsServices');
 async function handleTransaction(req, res) {
     try {
         const userId = req.user.id;
-        const { product_id, qty, total_price, profit } = req.body;
+        const { items } = req.body;
 
-        if(!product_id || !Number.isInteger(product_id)){
-            return res.status(400).json("product_id tidak valid");
+        if (!items || !Array.isArray(items) || items.length === 0) {
+            return res.status(400).json({ error: "Tidak ada barang yang dapat dijual." });
         }
 
-        if(!qty || !Number.isInteger(qty) || qty <= 0){
-            return res.status(400).json("qty harus berupa angka bulat lebih dari 0.");
+        for (const item of items) {
+            if (!item.product_id || !Number.isInteger(item.product_id)) {
+                return res.status(400).json({ error: "product_id tidak valid pada salah satu item." });
+            }
+            if (!item.qty || !Number.isInteger(item.qty) || item.qty <= 0) {
+                return res.status(400).json({ error: "qty harus berupa angka bulat lebih dari 0 pada salah satu item." });
+            }
         }
 
-        if(total_price == null || typeof total_price !== 'number' || qty < 0){
-            return res.status(400).json("total_price tidak valid.");
-        }
+        const result = await transactionService.processSale({ userId, items});
 
-        if(profit == null || typeof profit !== 'number' || profit < 0){
-            return res.status(400).json("profit tidak valid.");
-        }
-
-        const result = await transactionService.processSale({
-            userId,
-            product_id,
-            qty,
-            total_price,
-            profit
+        res.json({
+            message: "Transaksi berhasil",
+            transaction_id: result.transaction_id
         });
 
-        res.json(result.message);
+    } catch (err) {
+        res.status(400).json({error: "Transaksi gagal: " + err.message});
+    }
+}
+
+
+async function getTransactionDetail(req, res) {
+    try {
+        const { transactionId } = req.params;
+
+        if (!transactionId || isNaN(parseInt(transactionId))) {
+            return res.status(400).json({ error: "transactionId tidak valid." });
+        }
+
+        const detail = await transactionService.getTransactionDetail(parseInt(transactionId));
+        res.json(detail);
 
     } catch (err) {
-        res.status(400).json("Transaksi gagal: " + err.message);
+        res.status(400).json({ error: "Gagal mengambil detail transaksi: " + err.message });
+    }
+}
+
+async function getUserTransactions(req, res) {
+    try {
+        const userId = req.user.id;
+        const transactions = await transactionService.getUserTransactions(userId);
+        res.json(transactions);
+    } catch (err) {
+        res.status(400).json({ error: "Gagal mengambil daftar transaksi: " + err.message });
     }
 }
 
 module.exports = {
-    handleTransaction
+    handleTransaction,
+    getTransactionDetail,
+    getUserTransactions
 };

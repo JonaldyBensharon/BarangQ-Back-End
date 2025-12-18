@@ -24,5 +24,3 @@ async function handleAddStock(req, res) {
 module.exports = {
     handleAddStock
 };
-
-
