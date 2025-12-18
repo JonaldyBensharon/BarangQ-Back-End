@@ -57,7 +57,56 @@ async function updateStoreInfo(userId, data) {
     }
 }
 
+async function verifyUserPin(username, pinInput) {
+    const user = await findUserByUsername(username);
+    if (!user) return null;
+
+    const dbPin = user.pin_hash || user.pin; 
+    if (!dbPin) return null;
+
+    const match = await bcrypt.compare(pinInput, dbPin);
+    if (!match) return null;
+
+    return user;
+}
+
+async function updateUserPassword(username, newPasswordHash) {
+    const query = `
+        UPDATE users SET password_hash = $1, updated_at = NOW()
+        WHERE username = $2 RETURNING *;
+    `;
+    const { rows } = await pool.query(query, [newPasswordHash, username]);
+    return rows[0];
+}
+
+async function deleteUserById(userId) {
+    const findQuery = 'SELECT store_image FROM users WHERE id = $1';
+    const { rows: findRows } = await pool.query(findQuery, [userId]);
+    const user = findRows[0];
+
+    if (user && user.store_image) {
+        try {
+            const filename = user.store_image.split('/').pop(); 
+            const filePath = path.join(__dirname, '../../uploads', filename); 
+
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath); 
+                console.log(`[Service] File fisik berhasil dihapus: ${filename}`);
+            }
+        } catch (err) {
+            console.error("[Service] Gagal menghapus file fisik (lanjut hapus DB):", err);
+        }
+    }
+
+    const query = 'DELETE FROM users WHERE id = $1 RETURNING id';
+    const { rows } = await pool.query(query, [userId]);
+    return rows[0];
+}
+
 module.exports = {
     getStoreInfoById,
-    updateStoreInfo
+    updateStoreInfo,
+    verifyUserPin,
+    updateUserPassword,
+    deleteUserById
 };

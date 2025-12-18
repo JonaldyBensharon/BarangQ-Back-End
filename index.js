@@ -13,7 +13,7 @@ app.use((req, res, next) => {
 });
 
 // Impor routes
-const userRoutes = require('./src/routes/userRoutes');
+const loginRoutes = require('./src/routes/loginRoutes');
 const settingsRoutes = require('./src/routes/settingsRoutes');
 const productRoutes = require('./src/routes/productRoutes');
 const stockRoutes = require('./src/routes/stockRoutes');
@@ -22,7 +22,7 @@ const dashboardRoutes = require('./src/routes/dashboardRoutes');
 const reportsRoutes = require('./src/routes/reportsRoutes');
 
 // Registrasi routes
-app.use('/api/users', userRoutes);
+app.use('/api/users', loginRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/stocks', stockRoutes);
