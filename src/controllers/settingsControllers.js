@@ -1,4 +1,7 @@
 const settingsService = require('../services/settingsServices');
+const bcrypt = require('bcrypt');
+
+const SALT_ROUNDS = 10;
 
 async function getStoreInfo(req, res) {
     try {
@@ -36,7 +39,7 @@ async function updateStoreInfo(req, res) {
 async function verifyPin(req, res) {
     try {
         const { username, pin } = req.body;
-        const user = await userService.verifyUserPin(username, pin);
+        const user = await settingsService.verifyUserPin(username, pin);
         if (!user) return res.status(401).json({ error: 'Username atau pin salah.' });
         return res.status(200).json({ message: 'PIN terverifikasi.', username: user.username });
     } catch (err) {
@@ -49,21 +52,41 @@ async function changePassword(req, res) {
         const userId = req.user.id;
         const { oldPassword, newPassword } = req.body;
 
-        const query = 'SELECT * FROM users WHERE id = $1';
-        const { rows } = await pool.query(query, [userId]);
-        const user = rows[0];
+        if (!oldPassword || !newPassword) {
+            return res.status(400).json({ error: 'Input kata sandi tidak lengkap.' });
+        }
 
-        if (!user) return res.status(404).json({ error: 'User tidak ditemukan' });
+        const result = await settingsService.changePasswordById(
+            userId,
+            oldPassword,
+            newPassword
+        );
 
-        const match = await bcrypt.compare(oldPassword, user.password_hash);
-        if (!match) return res.status(401).json({ error: 'Password lama salah.' });
+        if (result.error) {
+            return res.status(401).json({ error: result.error });
+        }
 
-        const newPasswordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
-        await userService.updateUserPassword(user.username, newPasswordHash);
-
-        return res.json({ message: 'Password berhasil diperbarui.' });
+        return res.json({ message: 'Kata sandi berhasil diperbarui.' });
     } catch (err) {
-        res.status(500).json({ error: 'Gagal mengganti password.' });
+        console.error('[changePassword]', err);
+        res.status(500).json({ error: 'Gagal mengganti kata sandi.' });
+    }
+}
+
+async function resetPassword(req, res) {
+    try {
+        const { username, newPassword } = req.body;
+        if(!username || !newPassword){
+            return res.status(400).json({error: 'Data tidak lengkap'});
+        }
+
+        const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+
+        await settingsService.updateUserPassword(username, passwordHash);
+
+        return res.status(200).json({ message: 'Kata sandi berhasil diubah.' });
+    } catch (err) {
+        return res.status(500).json({ error: 'Terjadi kesalahan server.' });
     }
 }
 
@@ -90,5 +113,6 @@ module.exports = {
     updateStoreInfo,
     verifyPin,
     changePassword,
+    resetPassword,
     deleteAccount
 };

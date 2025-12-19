@@ -1,4 +1,8 @@
 const pool = require('../config/db');
+const bcrypt = require('bcrypt');
+const { findUserByUsername } = require('./loginServices');
+
+const SALT_ROUNDS = 10;
 
 async function getStoreInfoById(userId) {
     const query = 'SELECT username, store_name, store_description, address, store_image FROM users WHERE id = $1';
@@ -79,6 +83,26 @@ async function updateUserPassword(username, newPasswordHash) {
     return rows[0];
 }
 
+async function changePasswordById(userId, oldPassword, newPassword) {
+    const query = 'SELECT password_hash FROM users WHERE id = $1';
+    const { rows } = await pool.query(query, [userId]);
+    const user = rows[0];
+
+    if (!user) return { error: 'Username tidak ditemukan' };
+
+    const match = await bcrypt.compare(oldPassword, user.password_hash);
+    if (!match) return { error: 'Kata sandi lama salah' };
+
+    const newHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+
+    await pool.query(
+        'UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2',
+        [newHash, userId]
+    );
+
+    return { success: true };
+}
+
 async function deleteUserById(userId) {
     const findQuery = 'SELECT store_image FROM users WHERE id = $1';
     const { rows: findRows } = await pool.query(findQuery, [userId]);
@@ -107,6 +131,7 @@ module.exports = {
     getStoreInfoById,
     updateStoreInfo,
     verifyUserPin,
+    changePasswordById,
     updateUserPassword,
     deleteUserById
 };
