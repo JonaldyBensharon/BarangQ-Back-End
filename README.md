@@ -40,3 +40,9 @@
 6. Periksa salah satu tabel, jika tampil, ini sudah berhasil. 
 
     Cth: select * from users
+
+# Testing Online
+
+Link deployment Back-End yang sudah terintegrasi dengan database.
+
+https://barangq-back-end-production.up.railway.app
