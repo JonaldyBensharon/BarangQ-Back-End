@@ -19,4 +19,8 @@ const pool = new Pool({
     }
 })();
 
+pool.query('SELECT 1')
+.then(() => console.log('DB OK'))
+.catch(err => console.error('DB ERROR', err));
+
 module.exports = pool;
