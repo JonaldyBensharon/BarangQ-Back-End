@@ -12,6 +12,8 @@ router.put('/verify-pin', authenticateToken, settingsController.verifyPin);
 
 router.put('/change-password', authenticateToken, settingsController.changePassword);
 
+router.put('/reset-password', authenticateToken, settingsController.resetPassword);
+
 router.delete('/delete-account', authenticateToken, settingsController.deleteAccount);
 
 module.exports = router;
