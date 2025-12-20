@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     username VARCHAR(100) UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
-    pin TEXT NOT NULL,
+    pin_hash TEXT NOT NULL,
     store_name VARCHAR(100) DEFAULT 'Toko Saya',
     store_description TEXT,
     address TEXT,

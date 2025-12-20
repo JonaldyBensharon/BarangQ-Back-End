@@ -1,10 +1,12 @@
 const pool = require('../config/db');
 const bcrypt = require('bcrypt');
+const fs = require('fs');      
+const path = require('path');   
 
 // Buat user baru
 async function createUser(username, passwordHash, store_name, pinHash) {
     const query = `
-        INSERT INTO users(username, password_hash, store_name, pin)
+        INSERT INTO users(username, password_hash, store_name, pin_hash)
         VALUES($1, $2, $3, $4)
         RETURNING id, username, store_name;
     `;
@@ -53,9 +55,9 @@ async function updateUserPassword(username, newPasswordHash) {
 // Verifikasi PIN user
 async function verifyUserPin(username, pin) {
     const user = await findUserByUsername(username);
-    if (!user) return null;
+    if (!user || !user.pin_hash) return null;
 
-    const match = await bcrypt.compare(pin, user.pin);
+    const match = await bcrypt.compare(pin, user.pin_hash);
     if (!match) return null;
 
     return {

@@ -1,11 +1,11 @@
-const userService = require('../services/userServices');
+const userService = require('../services/loginServices');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
 const SALT_ROUNDS = 10;
 const expiresIn = process.env.JWT_EXPIRES_IN?.trim() || '1d';
+const JWT_SECRET = process.env.JWT_SECRET || 'rahasia_negara';
 
-// Registrasi user baru
 async function registerUser(req, res) {
     try {
         const { username, password, store_name } = req.body;
@@ -22,10 +22,10 @@ async function registerUser(req, res) {
         }
 
         const cleanUsername = username.trim();
-
         const existingUser = await userService.findUserByUsername(cleanUsername);
+
         if (existingUser) {
-            return res.status(409).json({ error: 'Username sudah digunakan. Silakan ganti username Anda.' });
+            return res.status(409).json({ error: 'Username sudah digunakan.' });
         }
 
         const pin = String(Math.floor(1000 + Math.random() * 9000));
@@ -46,14 +46,14 @@ async function registerUser(req, res) {
         });
     } catch (err) {
         console.error('Error detail:', err);
-        return res.status(500).json({ error: 'Terjadi kesalahan server.' });
+        return res.status(500).json({ error: 'Gagal melakukan registrasi' });
     }
 }
 
-// Login user 
 async function loginUser(req, res) {
     try {
         const { username, password } = req.body;
+
         if (!username || !password) {
             return res.status(400).json({ error: 'Nama pengguna dan kata sandi wajib diisi.' });
         }
@@ -68,13 +68,10 @@ async function loginUser(req, res) {
         const match = await bcrypt.compare(password, user.password_hash);
         if (!match) return res.status(401).json({ error: 'Kata sandi salah. Silakan coba lagi.' });
 
-        const token = jwt.sign(
-            {
-                id: user.id, 
-                username: user.username
-            },
-            process.env.JWT_SECRET, 
-            {expiresIn}
+        const token = jwt.sign({ 
+            id: user.id, 
+            username: user.username 
+            }, JWT_SECRET, { expiresIn }
         );
 
         return res.status(200).json({
@@ -92,7 +89,7 @@ async function loginUser(req, res) {
     }
 }
 
-async function handleGetUserInfo(req, res){
+async function handleGetUserInfoById(req, res){
     try {
         const userId = req.user.id;
         const user = await userService.findUserById(userId);
@@ -102,6 +99,16 @@ async function handleGetUserInfo(req, res){
         res.json(user);
     } catch (err) {
         console.error(err);
+        res.status(500).json(err.message);
+    }
+};
+
+async function handleGetUserInfoByUsername(req, res){
+    try {
+        const username = req.user?.username; 
+        const data = await userService.findUserByUsername(username);
+        res.json(data ?? {});
+    } catch (err) {
         res.status(500).json(err.message);
     }
 };
@@ -150,7 +157,8 @@ async function resetPassword(req, res) {
 module.exports = {
     registerUser,
     loginUser,
-    handleGetUserInfo,
+    handleGetUserInfoByUsername,
+    handleGetUserInfoById,
     verifyPin,
     resetPassword
 };

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const stockController = require('../controllers/stockControllers');
-const auth = require('../middlewares/authMiddleware')
+const auth = require('../middleware/authMiddleware')
 
 router.post('/add-stock', auth, stockController.handleAddStock);
 

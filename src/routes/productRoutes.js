@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const productController = require('../controllers/productControllers');
-const auth = require('../middlewares/authMiddleware')
+const auth = require('../middleware/authMiddleware')
 
 // Ambil data produk
 router.get('/', auth, productController.handleGetProducts);

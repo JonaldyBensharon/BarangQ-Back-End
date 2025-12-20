@@ -2,25 +2,21 @@ const { Pool } = require('pg');
 require('dotenv').config();
 
 const pool = new Pool({
-    user: process.env.DB_USER,
-    host: process.env.DB_HOST,
-    database: process.env.DB_NAME,
-    password: process.env.DB_PASSWORD,
-    port: process.env.DB_PORT
+    connectionString: process.env.DATABASE_URL,
+    ssl: {
+        rejectUnauthorized: false
+    }
 });
 
-// Informasi Koneksi di terminal
-pool.connect((err, client, release) => {
-    if (err) {
-        return console.error('Gagal Koneksi ke Database:', err.message);
+(async () => {
+    try {
+        const client = await pool.connect();
+        await client.query('SELECT 1');
+        client.release();
+        console.log('Database terhubung dengan sukses');
+    } catch (err) {
+        console.error('Gagal koneksi ke database:', err.message);
     }
-    client.query('SELECT NOW()', (err, result) => {
-        release();
-        if (err) {
-            return console.error('Error query:', err.stack);
-        }
-        console.log('Database TERHUBUNG SUKSES di Port 5432!');
-    });
-});
+})();
 
 module.exports = pool;
