@@ -1,15 +1,37 @@
 const pool = require('../config/db');
 
-// Cari produk berdasarkan nama atau kode
+// Cari produk dengan logika: Prioritas Kode -> Nama (Cek Duplikat)
 async function findProduct(client, userId, search_term) {
-    const result = await client.query(
-        `SELECT * FROM products 
-        WHERE user_id = $1
-        AND (lower(name) = lower($2) OR code = $2)
-        LIMIT 1`,
-        [userId, search_term]
-    );
-    return result.rows[0] || null;
+    // 1. Cek berdasarkan KODE (Pasti unik & spesifik)
+    const codeQuery = `
+        SELECT * FROM products 
+        WHERE user_id = $1 
+        AND code = $2
+        AND is_deleted = FALSE
+    `;
+    const codeResult = await client.query(codeQuery, [userId, search_term]);
+
+    // Jika ketemu berdasarkan kode, langsung kembalikan
+    if (codeResult.rows.length > 0) {
+        return codeResult.rows[0];
+    }
+
+    // 2. Jika kode tidak ketemu, cari berdasarkan NAMA
+    const nameQuery = `
+        SELECT * FROM products 
+        WHERE user_id = $1 
+        AND lower(name) = lower($2)
+        AND is_deleted = FALSE
+    `;
+    const nameResult = await client.query(nameQuery, [userId, search_term]);
+
+    // VALIDASI KETAT:
+    // Jika ditemukan lebih dari 1 barang dengan nama yang sama, tolak!
+    if (nameResult.rows.length > 1) {
+        throw new Error(`Ditemukan ${nameResult.rows.length} barang dengan nama "${search_term}". Harap masukkan KODE barang agar spesifik.`);
+    }
+
+    return nameResult.rows[0] || null;
 }
 
 async function incrementStock(client, userId, productId, qty) {
@@ -25,13 +47,11 @@ async function addStock({ userId, search_term, qty }) {
     try {
         await client.query('BEGIN');
         
-        // 1. Cari Produk
         const product = await findProduct(client, userId, search_term);
         if (!product) {
-            throw new Error('Produk tidak ditemukan.');
+            throw new Error('Produk tidak ditemukan atau sudah dihapus.');
         }
 
-        // 2. Update Stok (Tanpa Insert ke Transactions)
         await incrementStock(client, userId, product.id, qty);
         
         await client.query('COMMIT');
