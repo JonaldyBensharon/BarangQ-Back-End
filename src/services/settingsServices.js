@@ -1,5 +1,7 @@
 const pool = require('../config/db');
 const bcrypt = require('bcrypt');
+const fs = require('fs');      
+const path = require('path');   
 const { findUserByUsername } = require('./loginServices');
 
 const SALT_ROUNDS = 10;
