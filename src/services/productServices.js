@@ -4,7 +4,7 @@ async function getAllProducts(userId) {
     const query = `
         SELECT *
         FROM products
-        WHERE user_id = $1
+        WHERE user_id = $1 AND is_deleted = FALSE
         ORDER BY id DESC;
     `;
     const { rows } = await pool.query(query, [userId]);
@@ -18,6 +18,7 @@ async function checkProductExists(userId, name, brand) {
         WHERE user_id = $1
         AND name = $2 
         AND brand = $3
+        AND is_deleted = FALSE
         LIMIT 1;
     `;
     const { rows } = await pool.query(query, [userId, name, brand]);
@@ -31,6 +32,7 @@ async function checkCodeExists(userId, code) {
         FROM products
         WHERE user_id = $1
         AND code = $2 
+        AND is_deleted = FALSE
         LIMIT 1;
     `;
     const { rows } = await pool.query(query, [userId, code]);
@@ -85,9 +87,14 @@ async function updateProduct(userId, productId, data) {
 }
 
 async function deleteProduct(userId, productId) {
-    const query = `DELETE FROM products WHERE id = $1 AND user_id = $2;`;
+    const query = `
+        UPDATE products 
+        SET is_deleted = TRUE,
+            code = code || '-DEL-' || CAST(EXTRACT(EPOCH FROM NOW()) AS INTEGER)
+        WHERE id = $1 AND user_id = $2;
+    `;
     await pool.query(query, [productId, userId]);
-    return "Terhapus";
+    return "Terhapus (Soft Delete)";
 }
 
 module.exports = {
