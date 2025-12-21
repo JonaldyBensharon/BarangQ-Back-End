@@ -35,7 +35,6 @@ async function updateStoreInfo(req, res) {
     }
 };
 
-// Verifikasi PIN untuk pemulihan password
 async function verifyPin(req, res) {
     try {
         const { username, pin } = req.body;

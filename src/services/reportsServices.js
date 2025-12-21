@@ -1,10 +1,6 @@
 const pool = require('../config/db');
 
 async function getAllReports(userId) {
-    // Kita manfaatkan View 'vw_detail_transactions' yang sudah Anda buat.
-    // View ini di-JOIN dengan tabel 'transactions' hanya untuk mengambil tanggal (created_at)
-    // dan memfilter berdasarkan user_id.
-
     const query = `
         SELECT 
             v.id,
@@ -24,7 +20,6 @@ async function getAllReports(userId) {
         return result.rows;
     } catch (error) {
         console.error("Error SQL Report:", error.message);
-        // Jika error, kemungkinan View belum dibuat di database
         return []; 
     }
 }

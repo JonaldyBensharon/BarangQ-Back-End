@@ -25,7 +25,6 @@ BEFORE UPDATE ON users
 FOR EACH ROW
 EXECUTE FUNCTION update_timestamp();
 
--- Tabel Products 
 CREATE TABLE IF NOT EXISTS products (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -37,6 +36,7 @@ CREATE TABLE IF NOT EXISTS products (
     buy_price DECIMAL(15, 2) NOT NULL CHECK (buy_price >= 0),
     sell_price DECIMAL(15, 2) NOT NULL CHECK (sell_price >= 0),
     stock INTEGER NOT NULL DEFAULT 0 CHECK (stock >= 0),
+    is_deleted BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     UNIQUE (user_id, code)

@@ -25,13 +25,11 @@ async function addStock({ userId, search_term, qty }) {
     try {
         await client.query('BEGIN');
         
-        // 1. Cari Produk
         const product = await findProduct(client, userId, search_term);
         if (!product) {
             throw new Error('Produk tidak ditemukan.');
         }
 
-        // 2. Update Stok (Tanpa Insert ke Transactions)
         await incrementStock(client, userId, product.id, qty);
         
         await client.query('COMMIT');
