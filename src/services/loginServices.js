@@ -3,7 +3,6 @@ const bcrypt = require('bcrypt');
 const fs = require('fs');      
 const path = require('path');   
 
-// Buat user baru
 async function createUser(username, passwordHash, store_name, pinHash) {
     const query = `
         INSERT INTO users(username, password_hash, store_name, pin_hash)
@@ -15,7 +14,6 @@ async function createUser(username, passwordHash, store_name, pinHash) {
     return rows[0];
 }
 
-// Cari user berdasarkan username
 async function findUserByUsername(username) {
     const query = `
         SELECT *
@@ -27,7 +25,6 @@ async function findUserByUsername(username) {
     return rows[0] || null;
 }
 
-// Cari user berdasarkan id
 async function findUserById(userId) {
     const query = `
         SELECT *
@@ -39,7 +36,6 @@ async function findUserById(userId) {
     return rows[0] || null;
 }
 
-// Update password user
 async function updateUserPassword(username, newPasswordHash) {
     const query = `
         UPDATE users
@@ -52,7 +48,6 @@ async function updateUserPassword(username, newPasswordHash) {
     return rows[0] || null;
 }
 
-// Verifikasi PIN user
 async function verifyUserPin(username, pin) {
     const user = await findUserByUsername(username);
     if (!user || !user.pin_hash) return null;

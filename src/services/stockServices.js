@@ -1,8 +1,6 @@
 const pool = require('../config/db');
 
-// Cari produk dengan logika: Prioritas Kode -> Nama (Cek Duplikat)
 async function findProduct(client, userId, search_term) {
-    // 1. Cek berdasarkan KODE (Pasti unik & spesifik)
     const codeQuery = `
         SELECT * FROM products 
         WHERE user_id = $1 
@@ -11,12 +9,10 @@ async function findProduct(client, userId, search_term) {
     `;
     const codeResult = await client.query(codeQuery, [userId, search_term]);
 
-    // Jika ketemu berdasarkan kode, langsung kembalikan
     if (codeResult.rows.length > 0) {
         return codeResult.rows[0];
     }
 
-    // 2. Jika kode tidak ketemu, cari berdasarkan NAMA
     const nameQuery = `
         SELECT * FROM products 
         WHERE user_id = $1 
@@ -25,8 +21,6 @@ async function findProduct(client, userId, search_term) {
     `;
     const nameResult = await client.query(nameQuery, [userId, search_term]);
 
-    // VALIDASI KETAT:
-    // Jika ditemukan lebih dari 1 barang dengan nama yang sama, tolak!
     if (nameResult.rows.length > 1) {
         throw new Error(`Ditemukan ${nameResult.rows.length} barang dengan nama "${search_term}". Harap masukkan KODE barang agar spesifik.`);
     }
