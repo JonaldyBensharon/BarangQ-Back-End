@@ -42,20 +42,25 @@ async function checkCodeExists(userId, code) {
 async function createProduct(userId, data) {
     let { code, name, brand, description, image_url, buy_price, sell_price, stock } = data;
 
-    code = code?.trim() || null;
+    code = code?.trim();
+
+    if (!code) {
+        const randomNum = Math.floor(100000 + Math.random() * 900000);
+        code = `BRG-${randomNum}`;
+    }
 
     const existingCode = await checkCodeExists(userId, code);
-    if(existingCode){
-        throw new Error('Kode produk sudah digunakan. Gunakan kode lain.')
+    if (existingCode) {
+        throw new Error('Kode produk sudah digunakan. Gunakan kode lain.');
     }
 
     const query = `
         INSERT INTO products 
         (user_id, code, name, brand, description, image_url, buy_price, sell_price, stock)
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8, $9)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         RETURNING *;
     `;
-    const {rows} = await pool.query(query, [
+    const { rows } = await pool.query(query, [
         userId, code, name, brand, description, image_url, buy_price, sell_price, stock
     ]);
 
@@ -68,8 +73,8 @@ async function updateProduct(userId, productId, data) {
     code = code?.trim() || null;
 
     const existingCode = await checkCodeExists(userId, code);
-    if(existingCode && existingCode.id !== parseInt(productId)){
-        throw new Error('Kode produk sudah digunakan. Gunakan kode lain.')
+    if (existingCode && existingCode.id !== parseInt(productId)) {
+        throw new Error('Kode produk sudah digunakan. Gunakan kode lain.');
     }
 
     const query = `
@@ -79,7 +84,7 @@ async function updateProduct(userId, productId, data) {
         RETURNING *;
     `;
 
-    const {rows}= await pool.query(query, [
+    const { rows } = await pool.query(query, [
         code, name, brand, description, image_url, buy_price, sell_price, parseInt(productId), userId
     ]);
 

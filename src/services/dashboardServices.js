@@ -15,7 +15,7 @@ async function getProductCount(userId) {
     const result = await pool.query(
         `SELECT COUNT(*) AS count
          FROM products
-         WHERE user_id = $1`,
+         WHERE user_id = $1 AND is_deleted = FALSE`,
          [userId]
     );
     return Number(result.rows[0].count);
@@ -34,7 +34,7 @@ async function getLowStock(userId) {
     const result = await pool.query(
         `SELECT id, name, stock 
         FROM products 
-        WHERE user_id = $1 AND stock < 5 
+        WHERE user_id = $1 AND stock < 5 AND is_deleted = FALSE
         ORDER BY stock ASC
         LIMIT 5`, [userId]
     );

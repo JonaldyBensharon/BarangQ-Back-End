@@ -93,7 +93,7 @@ async function deleteAccount(req, res) {
     try {
         const userId = req.user.id;
         
-        const deletedUser = await userService.deleteUserById(userId);
+        const deletedUser = await settingsService.deleteUserById(userId);
 
         if (!deletedUser) return res.status(404).json({ error: 'User tidak ditemukan.' });
         
