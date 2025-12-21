@@ -40,7 +40,7 @@ async function checkCodeExists(userId, code) {
 }
 
 async function createProduct(userId, data) {
-    let { code, name, brand, description, image_url, buy_price, sell_price, stock } = data;
+    let { code, name, brand, description, buy_price, sell_price, stock } = data;
 
     code = code?.trim();
 
@@ -56,19 +56,19 @@ async function createProduct(userId, data) {
 
     const query = `
         INSERT INTO products 
-        (user_id, code, name, brand, description, image_url, buy_price, sell_price, stock)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        (user_id, code, name, brand, description, buy_price, sell_price, stock)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         RETURNING *;
     `;
     const { rows } = await pool.query(query, [
-        userId, code, name, brand, description, image_url, buy_price, sell_price, stock
+        userId, code, name, brand, description, buy_price, sell_price, stock
     ]);
 
     return rows[0];
 }
 
 async function updateProduct(userId, productId, data) {
-    let { code, name, brand, description, image_url, buy_price, sell_price } = data;
+    let { code, name, brand, description, buy_price, sell_price } = data;
 
     code = code?.trim() || null;
 
@@ -79,13 +79,13 @@ async function updateProduct(userId, productId, data) {
 
     const query = `
         UPDATE products
-        SET code=$1, name=$2, brand=$3, description=$4, image_url=$5, buy_price=$6, sell_price=$7
-        WHERE id=$8 AND user_id=$9
+        SET code=$1, name=$2, brand=$3, description=$4, buy_price=$5, sell_price=$6
+        WHERE id=$7 AND user_id=$8
         RETURNING *;
     `;
 
     const { rows } = await pool.query(query, [
-        code, name, brand, description, image_url, buy_price, sell_price, parseInt(productId), userId
+        code, name, brand, description, buy_price, sell_price, parseInt(productId), userId
     ]);
 
     return rows[0];

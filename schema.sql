@@ -1,4 +1,3 @@
--- Tabel Users
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     username VARCHAR(100) UNIQUE NOT NULL,
@@ -31,8 +30,7 @@ CREATE TABLE IF NOT EXISTS products (
     code VARCHAR(50), 
     name VARCHAR(255) NOT NULL,
     brand VARCHAR(100),     
-    description TEXT,
-    image_url TEXT,         
+    description TEXT,        
     buy_price DECIMAL(15, 2) NOT NULL CHECK (buy_price >= 0),
     sell_price DECIMAL(15, 2) NOT NULL CHECK (sell_price >= 0),
     stock INTEGER NOT NULL DEFAULT 0 CHECK (stock >= 0),
